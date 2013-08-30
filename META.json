@@ -44,6 +44,7 @@
          "requires" : {
             "perl" : "5.008005",
             "Digest::MurmurHash3" : "0.01",
+            "Math::Random::MT" : "1.16",
          }
       },
       "test" : {
