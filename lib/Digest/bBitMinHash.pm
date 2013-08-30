@@ -4,6 +4,7 @@ use 5.008005;
 use strict;
 use warnings;
 use autodie;
+use bigint;
 
 use Digest::MurmurHash3;
 use Math::Random::MT;
@@ -73,6 +74,18 @@ sub get_b_bits_set {
         }
     }
     return \@b_bits_set;
+}
+
+sub compare_b_bits_set {
+    my ($self, $set_1, $set_2) = @_;
+    my $R = 0.0;
+    my $miss_bits = 0;
+    for (my $i = 0; $i < $self->{b}; $i++) {
+        my $tmp_miss_bits = $set_1->[$i] ^ $set_2->[$i];
+        $miss_bits = $miss_bits | $tmp_miss_bits;
+    }
+    my $miss_count = $self->pop_count($miss_bits);
+    return $R;
 }
 
 1;
