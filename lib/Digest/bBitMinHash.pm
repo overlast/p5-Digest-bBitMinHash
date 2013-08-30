@@ -7,26 +7,45 @@ use warnings;
 use autodie;
 
 use Digest::MurmurHash3;
+use Math::Random::MT;
+
+use YAML;
 
 our $VERSION = "0.0.0_01";
 
 sub new {
-    my ($class, $b, $k, $seed_arr_ref) = @_;
-    $b = 1 unless (($b) && ($b > 0));
-    $k = 128 unless (($k) && ($k > 0));
-    $seed_arr_ref = Digest::bBitMinHash->init_seeds($k) unless ((defined $seed_arr_ref) && (ref $seed_arr_ref eq "Array") && (($#$seed_arr_ref + 1) >= $k));
+    my ($class, $b, $k, $D, $seed_set) = @_;
+    if ((defined $b) && (ref $b eq 'Hash')) {
+        $k = $b->{k} if (exists $b->{k});
+        $D = $b->{D} if (exists $b->{D});
+        $seed_set = $b->{seed_set}  if (exists $b->{seed_set});
+        $b = $b->{b} if (exists $b->{b});
+    }
+    $b = 1 unless ((defined $b) && ($b > 0));
+    $k = 128 unless ((defined $k) && ($k > 0));
+    $D = 4294967296 unless ((defined $D) && ($D > 0)); # 2^32
+    $seed_set = Digest::bBitMinHash->get_seed_set($k, $D) unless ((defined $seed_set) && (ref $seed_set eq "Array") && (($#$seed_set + 1) >= $k));
+    print Dump $seed_set;
     my %hash = (
         'b' => $b,
         'k' => $k,
-        'seed' => $seed_arr_ref,
+        'D' => $D,
+        'seed' => $seed_set,
     );
     bless \%hash, $class;
 }
 
-
-
-
-
+sub get_seed_set {
+    my ($self, $k, $D) = @_;
+    my @seed_arr = ();
+    my $mt_seed = 13714;
+    my $mt = Math::Random::MT->new($mt_seed);
+    for (my $i = 0; $i <= $k; $i++) {
+        my $rand = $mt->rand($D);
+        push @seed_arr, $rand;
+    }
+    return \@seed_arr;
+}
 
 1;
 
