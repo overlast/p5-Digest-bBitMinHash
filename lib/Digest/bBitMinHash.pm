@@ -2,7 +2,6 @@ package Digest::bBitMinHash;
 
 use 5.008005;
 use strict;
-
 use warnings;
 use autodie;
 
@@ -14,37 +13,66 @@ use YAML;
 our $VERSION = "0.0.0_01";
 
 sub new {
-    my ($class, $b, $k, $D, $seed_set) = @_;
-    if ((defined $b) && (ref $b eq 'Hash')) {
+    my ($class, $b, $k, $random_seed, $hash_seed_set) = @_;
+    if ((defined $b) && (ref $b eq "HASH")) {
         $k = $b->{k} if (exists $b->{k});
-        $D = $b->{D} if (exists $b->{D});
-        $seed_set = $b->{seed_set}  if (exists $b->{seed_set});
+        $random_seed = $b->{random_seed} if (exists $b->{random_seed});
+        $hash_seed_set = $b->{hash_seed_set}  if (exists $b->{hash_seed_set});
         $b = $b->{b} if (exists $b->{b});
     }
-    $b = 1 unless ((defined $b) && ($b > 0));
+    $b = 1 unless ((defined $b) && (ref $b ne "HASH") && ($b > 0));
     $k = 128 unless ((defined $k) && ($k > 0));
-    $D = 4294967296 unless ((defined $D) && ($D > 0)); # 2^32
-    $seed_set = Digest::bBitMinHash->get_seed_set($k, $D) unless ((defined $seed_set) && (ref $seed_set eq "Array") && (($#$seed_set + 1) >= $k));
-    print Dump $seed_set;
+    $random_seed = 4294967296;
+    unless ((defined $hash_seed_set) && (ref $hash_seed_set eq "ARRAY") && (($#$hash_seed_set + 1) >= $k)) {
+        $hash_seed_set = Digest::bBitMinHash->get_seed_set($k, $random_seed)
+    }
     my %hash = (
         'b' => $b,
         'k' => $k,
-        'D' => $D,
-        'seed' => $seed_set,
+        'random_seed' => $random_seed,
+        'hash_seed_set' => $hash_seed_set,
     );
     bless \%hash, $class;
 }
 
 sub get_seed_set {
-    my ($self, $k, $D) = @_;
+    my ($self, $k, $random_seed) = @_;
     my @seed_arr = ();
-    my $mt_seed = 13714;
+    my $mt_seed = 13714; # mean less
     my $mt = Math::Random::MT->new($mt_seed);
-    for (my $i = 0; $i <= $k; $i++) {
-        my $rand = $mt->rand($D);
+    for (my $i = 0; $i < $k; $i++) {
+        my $rand = $mt->rand($random_seed);
         push @seed_arr, $rand;
     }
     return \@seed_arr;
+}
+
+sub get_b_bits_set {
+    my ($self, $data_arr_ref) = @_;
+    my @b_bits_set = ();
+    for (my $h = 0; $h < $self->{b}; $h++) {
+        my $tmp_val = 0;
+        push @b_bits_set, $tmp_val;
+    }
+    for (my $i = 0; $i < $self->{k}; $i++) {
+        my $min_hash_val;
+        my $seed = $self->{hash_seed_set}->[$i];
+        for (my $j = 0; $j <= $#$data_arr_ref; $j++) {
+            my $data = $data_arr_ref->[$j];
+            my @varies = Digest::MurmurHash3::murmur128($data, $seed);
+            if (defined $min_hash_val) {
+                $min_hash_val = $varies[-1] if ($min_hash_val > $varies[-1]);
+            } else {
+                $min_hash_val = $varies[-1];
+            }
+        }
+        for (my $l = 0; $l < $self->{b}; $l++) {
+            my $bit = vec($min_hash_val, $l, 1);
+            $b_bits_set[$l] = $b_bits_set[$l] << 1;
+            $b_bits_set[$l] = $b_bits_set[$l] | $bit;
+        }
+    }
+    return \@b_bits_set;
 }
 
 1;
