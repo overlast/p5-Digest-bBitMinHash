@@ -88,18 +88,42 @@ sub compare_b_bits_set {
     return $hit_count;
 }
 
-sub estimate_resemblance {
-    my ($data1, $data2, $hit_count) = @_;
-    my $score = 0.0;
+sub get_uniq_element_num {
+    my ($self, $data1, $data2) = @_;
+    my %hash = ();
+    my $num = 0;
+    my @data = (@{$data1}, @{$data2});
+    foreach my $e (@data) {
+        unless (exists $hash{$e}) {
+            $hash{$e} = 1;
+            $num++;
+        }
+    }
+    return $num;
+}
 
+sub estimate_resemblance {
+    my ($self, $data1, $data2, $hit_count) = @_;
+    my $score = 0.0;
+    my $f1 = $#{$data1} + 1;
+    my $f2 = $#{$data2} + 1;
+    my $D = $self->get_uniq_element_num($data1, $data2);
+    my $r1 = $f1 / $D;
+    my $r2 = $f2 / $D;
+    my $A1 = ($r1 * ((1 - $r1) ** (2 ** ($self->{b} - 1)))) / (1 - ((1 - $r1) ** (2 ** ($self->{b}))));
+    my $A2 = ($r2 * ((1 - $r2) ** (2 ** ($self->{b} - 1)))) / (1 - ((1 - $r2) ** (2 ** ($self->{b}))));
+    my $r = $r1 + $r2;
+    my $C1 = $A1 * ($r2 / $r) + $A2 * ($r1 / $r);
+    my $C2 = $A1 * ($r1 / $r) + $A2 * ($r2 / $r);
+    my $E = $hit_count / $self->{k};
+    my $R = ($E - $C1) / (1 - $C2);
+    $score = $R;
     return $score;
 }
 
 __END__
 
 1;
-
-
 
 =encoding utf-8
 
@@ -113,7 +137,15 @@ Digest::bBitMinHash - Perl implementation of b-Bit Minwise Hashing algorithm
 
     my $b = 1;
     my $k = 128;
-    my $bbmh = Digest::bBitMinHash->new($b, $k);
+    my $bbmh = Digest::bBitMinHash->new({"k"=>128, "b"=>2});
+    my @data1 = split / /, "巨人 中井 左膝 靭帯 損傷 登録 抹消";
+    my @data2 = split / /, "中井 左膝 登録 抹消 阪神 右肩 大阪";
+    my $bits1 = $db->get_b_bits_set(\@data1);
+    my $bits2 = $db->get_b_bits_set(\@data2);
+    my $hit_count =  $db->compare_b_bits_set($bits1, $bits2);
+    my $score = $db->estimate_resemblance(\@data1, \@data2, $hit_count);
+
+    # $score is under 0.8. So @data1 and @data2 are not similar.
 
 =head1 DESCRIPTION
 
