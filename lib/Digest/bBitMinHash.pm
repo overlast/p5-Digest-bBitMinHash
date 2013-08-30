@@ -4,7 +4,6 @@ use 5.008005;
 use strict;
 use warnings;
 use autodie;
-use bigint;
 
 use Digest::MurmurHash3;
 use Math::Random::MT;
@@ -60,11 +59,11 @@ sub get_b_bits_set {
         my $seed = $self->{hash_seed_set}->[$i];
         for (my $j = 0; $j <= $#$data_arr_ref; $j++) {
             my $data = $data_arr_ref->[$j];
-            my @varies = Digest::MurmurHash3::murmur128($data, $seed);
+            my $varies = Digest::MurmurHash3::murmur32($data, $seed);
             if (defined $min_hash_val) {
-                $min_hash_val = $varies[-1] if ($min_hash_val > $varies[-1]);
+                $min_hash_val = $varies if ($min_hash_val > $varies);
             } else {
-                $min_hash_val = $varies[-1];
+                $min_hash_val = $varies;
             }
         }
         for (my $l = 0; $l < $self->{b}; $l++) {
@@ -78,19 +77,29 @@ sub get_b_bits_set {
 
 sub compare_b_bits_set {
     my ($self, $set_1, $set_2) = @_;
-    my $R = 0.0;
-    my $miss_bits = 0;
-    for (my $i = 0; $i < $self->{b}; $i++) {
-        my $tmp_miss_bits = $set_1->[$i] ^ $set_2->[$i];
-        $miss_bits = $miss_bits | $tmp_miss_bits;
+    my $hit_count = 0;
+    for (my $i = 0; $i < $self->{k}; $i++) {
+        my $bit = 1;
+        for (my $j = 0; $j < $self->{b}; $j++) {
+            $bit = $bit * ((vec($set_1->[$j], $i, 1) eq vec($set_2->[$j], $i, 1)));
+        }
+        $hit_count = $hit_count + $bit;
     }
-    my $miss_count = $self->pop_count($miss_bits);
-    return $R;
+    return $hit_count;
 }
+
+sub estimate_resemblance {
+    my ($data1, $data2, $hit_count) = @_;
+    my $score = 0.0;
+
+    return $score;
+}
+
+__END__
 
 1;
 
-__END__
+
 
 =encoding utf-8
 
