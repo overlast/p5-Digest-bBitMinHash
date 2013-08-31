@@ -13,29 +13,29 @@ use YAML;
 our $VERSION = "0.0.0_01";
 
 sub new {
-    my ($class, $b, $k, $random_seed, $hash_seed_set) = @_;
+    my ($class, $b, $k, $random_seed, $hash_seeds) = @_;
     if ((defined $b) && (ref $b eq "HASH")) {
         $k = $b->{k} if (exists $b->{k});
         $random_seed = $b->{random_seed} if (exists $b->{random_seed});
-        $hash_seed_set = $b->{hash_seed_set}  if (exists $b->{hash_seed_set});
+        $hash_seeds = $b->{hash_seeds}  if (exists $b->{hash_seeds});
         $b = $b->{b} if (exists $b->{b});
     }
     $b = 1 unless ((defined $b) && (ref $b ne "HASH") && ($b > 0));
     $k = 128 unless ((defined $k) && ($k > 0));
     $random_seed = 4294967296;
-    unless ((defined $hash_seed_set) && (ref $hash_seed_set eq "ARRAY") && (($#$hash_seed_set + 1) >= $k)) {
-        $hash_seed_set = Digest::bBitMinHash->get_seed_set($k, $random_seed)
+    unless ((defined $hash_seeds) && (ref $hash_seeds eq "ARRAY") && (($#$hash_seeds + 1) >= $k)) {
+        $hash_seeds = Digest::bBitMinHash->get_hash_seeds($k, $random_seed);
     }
     my %hash = (
         'b' => $b,
         'k' => $k,
         'random_seed' => $random_seed,
-        'hash_seed_set' => $hash_seed_set,
+        'hash_seeds' => $hash_seeds,
     );
     bless \%hash, $class;
 }
 
-sub get_seed_set {
+sub get_hash_seeds {
     my ($self, $k, $random_seed) = @_;
     my @seed_arr = ();
     my $mt_seed = 13714; # mean less
@@ -47,16 +47,21 @@ sub get_seed_set {
     return \@seed_arr;
 }
 
-sub get_b_bits_set {
+sub get {
     my ($self, $data_arr_ref) = @_;
-    my @b_bits_set = ();
+    return $self->get_bit_vectors($data_arr_ref);
+}
+
+sub get_bit_vectors {
+    my ($self, $data_arr_ref) = @_;
+    my @bit_vectors = ();
     for (my $h = 0; $h < $self->{b}; $h++) {
         my $tmp_val = 0;
-        push @b_bits_set, $tmp_val;
+        push @bit_vectors, $tmp_val;
     }
     for (my $i = 0; $i < $self->{k}; $i++) {
         my $min_hash_val;
-        my $seed = $self->{hash_seed_set}->[$i];
+        my $seed = $self->{hash_seeds}->[$i];
         for (my $j = 0; $j <= $#$data_arr_ref; $j++) {
             my $data = $data_arr_ref->[$j];
             my $varies = Digest::MurmurHash3::murmur32($data, $seed);
@@ -68,24 +73,29 @@ sub get_b_bits_set {
         }
         for (my $l = 0; $l < $self->{b}; $l++) {
             my $bit = vec($min_hash_val, $l, 1);
-            $b_bits_set[$l] = $b_bits_set[$l] << 1;
-            $b_bits_set[$l] = $b_bits_set[$l] | $bit;
+            $bit_vectors[$l] = $bit_vectors[$l] << 1;
+            $bit_vectors[$l] = $bit_vectors[$l] | $bit;
         }
     }
-    return \@b_bits_set;
+    return \@bit_vectors;
 }
 
-sub compare_b_bits_set {
+sub compare {
+    my ($self, $vectors_1, $vectors_2) = @_;
+    return $self->compare_bit_vectors($vectors_1, $vectors_2);
+}
+
+sub compare_bit_vectors {
     my ($self, $set_1, $set_2) = @_;
-    my $hit_count = 0;
+    my $match = 0;
     for (my $i = 0; $i < $self->{k}; $i++) {
-        my $bit = 1;
+        my $bit_val = 1;
         for (my $j = 0; $j < $self->{b}; $j++) {
-            $bit = $bit * ((vec($set_1->[$j], $i, 1) eq vec($set_2->[$j], $i, 1)));
+            $bit_val = $bit_val * ((vec($set_1->[$j], $i, 1) eq vec($set_2->[$j], $i, 1)));
         }
-        $hit_count = $hit_count + $bit;
+        $match = $match + $bit_val;
     }
-    return $hit_count;
+    return $match;
 }
 
 sub get_uniq_element_num {
@@ -121,6 +131,15 @@ sub estimate_resemblance {
     return $score;
 }
 
+sub estimate {
+    my ($self, $data1, $data2) = @_;
+    my $bit_vectors1 = $self->get_bit_vectors($data1);
+    my $bit_vectors2 = $self->get_bit_vectors($data2);
+    my $match_bit_count = $self->compare_bit_vectors($bit_vectors1, $bit_vectors2);
+    my $score = $self->estimate_resemblance($bit_vectors1, $bit_vectors2, $match_bit_count);
+    return $score;
+}
+
 __END__
 
 1;
@@ -135,15 +154,21 @@ Digest::bBitMinHash - Perl implementation of b-Bit Minwise Hashing algorithm
 
     use Digest::bBitMinHash;
 
-    my $b = 1;
-    my $k = 128;
     my $bbmh = Digest::bBitMinHash->new({"k"=>128, "b"=>2});
+    # Or my $bbmh = Digest::bBitMinHash->new({"k"=>128, "b"=>2});
+
     my @data1 = split / /, "巨人 中井 左膝 靭帯 損傷 登録 抹消";
     my @data2 = split / /, "中井 左膝 登録 抹消 阪神 右肩 大阪";
-    my $bits1 = $db->get_b_bits_set(\@data1);
-    my $bits2 = $db->get_b_bits_set(\@data2);
-    my $hit_count =  $db->compare_b_bits_set($bits1, $bits2);
-    my $score = $db->estimate_resemblance(\@data1, \@data2, $hit_count);
+
+    my $vectors1 = $db->get_bit_vectors(\@data1);
+    my $vectors2 = $db->get_bit_vectors(\@data2);
+    # Or $vectors1 = $db->get(\@data1);
+
+    my $match_bit_count = $db->compare_bit_vectors($vectors1, $vectors2);
+    # Or $match_bit_count = $db->compare($vectors1, $vectors2);
+
+    my $score = $db->estimate_resemblance(\@data1, \@data2, $match_bit_count);
+    # Or $score = $db->estimate(\@data1, \@data2)
 
     # $score is under 0.8. So @data1 and @data2 are not similar.
 
