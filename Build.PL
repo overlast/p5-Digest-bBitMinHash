@@ -23,7 +23,7 @@ my %args = (
         'Module::Build' => 0.38,
     },
 
-    name            => 'Digest::bBitMinHash',
+    name            => 'Digest-bBitMinHash',
     module_name     => 'Digest::bBitMinHash',
     allow_pureperl => 0,
 

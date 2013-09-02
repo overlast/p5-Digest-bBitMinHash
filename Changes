@@ -2,5 +2,7 @@ Revision history for Perl extension Digest::bBitMinHash
 
 {{$NEXT}}
 
+0.0.0_01 2013-09-02T02:35:39Z
+
     - original version
 

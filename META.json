@@ -1,7 +1,7 @@
 {
-   "abstract" : "It's new $module",
+   "abstract" : "Perl implementation of b-Bit Minwise Hashing algorithm",
    "author" : [
-      "Toshinori Sato (@overlast) <overlasting@gmail.com>"
+      "Toshinori Sato (@overlast)."
    ],
    "dynamic_config" : 0,
    "generated_by" : "Minilla/v0.5.6, CPAN::Meta::Converter version 2.131560",
@@ -12,7 +12,7 @@
       "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
       "version" : "2"
    },
-   "name" : "Digest::bBitMinHash",
+   "name" : "Digest-bBitMinHash",
    "no_index" : {
       "directory" : [
          "t",
@@ -42,9 +42,7 @@
       },
       "runtime" : {
          "requires" : {
-            "perl" : "5.008005",
-            "Digest::MurmurHash3" : "0.01",
-            "Math::Random::MT" : "1.16",
+            "perl" : "5.008005"
          }
       },
       "test" : {
@@ -54,5 +52,19 @@
       }
    },
    "release_status" : "unstable",
-   "version" : "0.01"
+   "resources" : {
+      "bugtracker" : {
+         "web" : "https://github.com/overlast/p5-Digest-bBitMinHash/issues"
+      },
+      "homepage" : "https://github.com/overlast/p5-Digest-bBitMinHash",
+      "repository" : {
+         "type" : "git",
+         "url" : "git://github.com/overlast/p5-Digest-bBitMinHash.git",
+         "web" : "https://github.com/overlast/p5-Digest-bBitMinHash"
+      }
+   },
+   "version" : "0.0.0_01",
+   "x_contributors" : [
+      "Toshinori Sato (@overlast) <overlasting@gmail.com>"
+   ]
 }
