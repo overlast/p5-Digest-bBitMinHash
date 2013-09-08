@@ -2,7 +2,11 @@ Revision history for Perl extension Digest::bBitMinHash
 
 {{$NEXT}}
 
+0.0.0_02 2013-09-08T08:55:48Z
+    - Add dependent modules to cpanfile (Thanks to ispedals)
+    - Delete a few of dependent modules from bBitMinHash.pm
+    - Fix and write the sentences of a pod
+
 0.0.0_01 2013-09-02T02:35:39Z
 
     - original version
-

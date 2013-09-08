@@ -42,6 +42,8 @@
       },
       "runtime" : {
          "requires" : {
+            "Digest::MurmurHash3" : "0.01",
+            "Math::Random::MT" : "1.16",
             "perl" : "5.008005"
          }
       },
@@ -63,7 +65,7 @@
          "web" : "https://github.com/overlast/p5-Digest-bBitMinHash"
       }
    },
-   "version" : "0.0.0_01",
+   "version" : "0.0.0_02",
    "x_contributors" : [
       "Toshinori Sato (@overlast) <overlasting@gmail.com>"
    ]
