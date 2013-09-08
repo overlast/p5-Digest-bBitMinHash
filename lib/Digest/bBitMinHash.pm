@@ -3,14 +3,11 @@ package Digest::bBitMinHash;
 use 5.008005;
 use strict;
 use warnings;
-use autodie;
 
 use Digest::MurmurHash3;
 use Math::Random::MT;
 
-use YAML;
-
-our $VERSION = "0.0.0_01";
+our $VERSION = "0.0.0_02";
 
 sub new {
     my ($class, $b, $k, $random_seed, $hash_seeds) = @_;
